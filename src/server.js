@@ -12,6 +12,7 @@ const authRoutes = require('./routes/auth');
 const goalsRoutes = require('./routes/goals');
 const activityRoutes = require('./routes/activity');
 const usersRoutes = require('./routes/users');
+const teamRoutes = require('./routes/team');
 
 // Initialize Express app
 const app = express();
@@ -82,6 +83,7 @@ app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/goals', goalsRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/users', usersRoutes);
+app.use('/api/team', teamRoutes);
 
 // 404 handler
 app.use(notFoundHandler);

@@ -11,7 +11,15 @@ const { isValidEmail, isStrongPassword } = require('../utils/validators');
  */
 const register = async (req, res, next) => {
   try {
-    const { email, password, firstName, lastName } = req.body;
+    const { 
+      email, 
+      password, 
+      firstName, 
+      lastName, 
+      role = 'sales_rep',
+      organizationName,
+      organizationId 
+    } = req.body;
 
     // Validate email
     if (!isValidEmail(email)) {
@@ -26,6 +34,11 @@ const register = async (req, res, next) => {
         'Password must be at least 8 characters with 1 uppercase letter and 1 number',
         400
       );
+    }
+
+    // Validate role
+    if (!['sales_rep', 'manager', 'admin'].includes(role)) {
+      return errorResponse(res, 'INVALID_ROLE', 'Invalid role', 400);
     }
 
     // Check if user already exists
@@ -45,6 +58,50 @@ const register = async (req, res, next) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    let finalOrganizationId = organizationId;
+
+    // If creating new organization (manager/admin registering)
+    if (organizationName && !organizationId) {
+      // Check if organization name already exists
+      const existingOrg = await prisma.organization.findFirst({
+        where: { name: organizationName },
+      });
+
+      if (existingOrg) {
+        return errorResponse(
+          res,
+          'ORGANIZATION_EXISTS',
+          'Organization name already exists',
+          400
+        );
+      }
+
+      // Create new organization
+      const organization = await prisma.organization.create({
+        data: {
+          name: organizationName,
+        },
+      });
+
+      finalOrganizationId = organization.id;
+    }
+
+    // If joining existing organization, verify it exists
+    if (organizationId) {
+      const org = await prisma.organization.findUnique({
+        where: { id: organizationId },
+      });
+
+      if (!org) {
+        return errorResponse(
+          res,
+          'ORGANIZATION_NOT_FOUND',
+          'Organization not found',
+          400
+        );
+      }
+    }
+
     // Create user
     const user = await prisma.user.create({
       data: {
@@ -52,6 +109,8 @@ const register = async (req, res, next) => {
         password: hashedPassword,
         firstName,
         lastName,
+        role,
+        organizationId: finalOrganizationId,
       },
       select: {
         id: true,
@@ -59,6 +118,7 @@ const register = async (req, res, next) => {
         firstName: true,
         lastName: true,
         role: true,
+        organizationId: true,
       },
     });
 
@@ -66,6 +126,7 @@ const register = async (req, res, next) => {
     await prisma.goals.create({
       data: {
         userId: user.id,
+        organizationId: finalOrganizationId,
       },
     });
 
@@ -75,6 +136,7 @@ const register = async (req, res, next) => {
         userId: user.id,
         email: user.email,
         role: user.role,
+        organizationId: user.organizationId,
       },
       jwtConfig.secret,
       { expiresIn: jwtConfig.expiresIn }
@@ -134,6 +196,7 @@ const login = async (req, res, next) => {
         userId: user.id,
         email: user.email,
         role: user.role,
+        organizationId: user.organizationId,
       },
       jwtConfig.secret,
       { expiresIn: jwtConfig.expiresIn }
@@ -150,6 +213,7 @@ const login = async (req, res, next) => {
         firstName: userWithoutPassword.firstName,
         lastName: userWithoutPassword.lastName,
         role: userWithoutPassword.role,
+        organizationId: userWithoutPassword.organizationId,
       },
     });
   } catch (error) {
