@@ -20,36 +20,17 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// CORS configuration - Allow all Vercel domains
+// CORS configuration - Simple and permissive for Vercel
 const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (mobile apps, Postman, curl)
-    if (!origin) return callback(null, true);
-    
-    // Allow all Vercel domains
-    if (origin.includes('vercel.app')) {
-      return callback(null, true);
-    }
-    
-    // Allow localhost for development
-    if (origin.includes('localhost')) {
-      return callback(null, true);
-    }
-    
-    // Log rejected origins for debugging
-    console.log('CORS rejected origin:', origin);
-    callback(null, false);
-  },
+  origin: true, // Allow all origins for now
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  maxAge: 86400, // 24 hours
+  maxAge: 86400,
 };
 
 app.use(cors(corsOptions));
-
-// Explicitly handle OPTIONS requests for preflight
 app.options('*', cors(corsOptions));
 
 // Body parsing middleware
