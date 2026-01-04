@@ -346,7 +346,9 @@ const getOrganizations = async (req, res, next) => {
 
     return successResponse(res, organizations);
   } catch (error) {
-    next(error);
+    // If database error, return empty array (allows registration to continue)
+    console.error('Error fetching organizations:', error);
+    return successResponse(res, []);
   }
 };
 
