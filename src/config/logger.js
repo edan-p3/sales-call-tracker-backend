@@ -1,21 +1,20 @@
 const winston = require('winston');
 
-const logger = winston.createLogger({
-  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({ stack: true }),
-    winston.format.json()
-  ),
-  transports: [
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' }),
-  ],
-});
+const transports = [];
 
-// Also log to console in development
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(
+// In production (Vercel), only use console - no file logging
+if (process.env.NODE_ENV === 'production') {
+  transports.push(
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+      ),
+    })
+  );
+} else {
+  // In development, use both console and file logging
+  transports.push(
     new winston.transports.Console({
       format: winston.format.combine(
         winston.format.colorize(),
@@ -23,7 +22,23 @@ if (process.env.NODE_ENV !== 'production') {
       ),
     })
   );
+  transports.push(
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' })
+  );
+  transports.push(
+    new winston.transports.File({ filename: 'logs/combined.log' })
+  );
 }
+
+const logger = winston.createLogger({
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  transports,
+});
 
 module.exports = logger;
 
