@@ -68,7 +68,7 @@ app.use('/api/', limiter);
 // Stricter rate limiting for auth routes
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 requests per window
+  max: 50, // 50 requests per window (more reasonable for testing/production)
   message: {
     success: false,
     error: {
