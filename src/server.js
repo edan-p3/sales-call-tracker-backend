@@ -84,6 +84,11 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Handle all OPTIONS requests before any other middleware
+app.options('*', (req, res) => {
+  res.status(200).end();
+});
+
 // API routes
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/goals', goalsRoutes);
