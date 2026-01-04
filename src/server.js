@@ -20,38 +20,37 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-// CORS configuration - Allow multiple origins
-const allowedOrigins = process.env.CORS_ORIGIN 
-  ? process.env.CORS_ORIGIN.split(',').map(origin => origin.trim())
-  : ['http://localhost:3000'];
-
-// Add wildcard for any Vercel preview URL if in development
-if (process.env.NODE_ENV !== 'production') {
-  allowedOrigins.push('http://localhost:3000', 'http://localhost:3001');
-}
-
+// CORS configuration - Allow all Vercel domains
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, Postman, or curl)
+    // Allow requests with no origin (mobile apps, Postman, curl)
     if (!origin) return callback(null, true);
     
-    // Check if origin is in allowed list
-    if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      // Also check for Vercel preview URLs pattern
-      if (origin && origin.includes('vercel.app')) {
-        callback(null, true); // Allow all Vercel URLs for now
-      } else {
-        callback(null, false);
-      }
+    // Allow all Vercel domains
+    if (origin.includes('vercel.app')) {
+      return callback(null, true);
     }
+    
+    // Allow localhost for development
+    if (origin.includes('localhost')) {
+      return callback(null, true);
+    }
+    
+    // Log rejected origins for debugging
+    console.log('CORS rejected origin:', origin);
+    callback(null, false);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400, // 24 hours
 };
+
 app.use(cors(corsOptions));
+
+// Explicitly handle OPTIONS requests for preflight
+app.options('*', cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json());
