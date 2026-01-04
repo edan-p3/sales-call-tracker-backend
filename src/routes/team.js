@@ -9,11 +9,11 @@ const {
   getOrganizations,
 } = require('../controllers/teamController');
 
-// All routes require authentication
-router.use(authenticate);
-
-// Get list of organizations (for registration/joining)
+// Get list of organizations (PUBLIC - for registration/joining)
 router.get('/organizations', getOrganizations);
+
+// All other routes require authentication
+router.use(authenticate);
 
 // Get all team members
 router.get('/members', getTeamMembers);
