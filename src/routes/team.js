@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticate } = require('../middleware/auth');
+const { authenticateToken, requireRole } = require('../middleware/auth');
 const {
   getTeamMembers,
   getTeamMemberGoals,
@@ -13,7 +13,7 @@ const {
 router.get('/organizations', getOrganizations);
 
 // All other routes require authentication
-router.use(authenticate);
+router.use(authenticateToken);
 
 // Get all team members
 router.get('/members', getTeamMembers);
