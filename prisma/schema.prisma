@@ -1,0 +1,109 @@
+// This is your Prisma schema file
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  plan      String   @default("free") // 'free', 'pro', 'enterprise'
+  maxUsers  Int      @default(5)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users  User[]
+  goals  Goals[]
+
+  @@map("organizations")
+}
+
+model User {
+  id             String        @id @default(uuid())
+  email          String        @unique
+  password       String
+  firstName      String
+  lastName       String
+  role           String        @default("sales_rep") // 'admin', 'sales_rep', 'manager'
+  organizationId String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  organization     Organization?     @relation(fields: [organizationId], references: [id])
+  goals            Goals[]
+  weeklyActivities WeeklyActivity[]
+
+  @@map("users")
+}
+
+model Goals {
+  id               String    @id @default(uuid())
+  userId           String?
+  organizationId   String?
+  callsPerDay      Int       @default(25)
+  emailsPerDay     Int       @default(30)
+  contactsPerDay   Int       @default(10)
+  responsesPerDay  Int       @default(5)
+  callsPerWeek     Int       @default(125)
+  emailsPerWeek    Int       @default(150)
+  contactsPerWeek  Int       @default(50)
+  responsesPerWeek Int       @default(25)
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  user         User?         @relation(fields: [userId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+
+  @@map("goals")
+}
+
+model WeeklyActivity {
+  id            String   @id @default(uuid())
+  userId        String
+  weekStartDate String   // ISO format: YYYY-MM-DD
+
+  // Monday
+  mondayCalls     Int @default(0)
+  mondayEmails    Int @default(0)
+  mondayContacts  Int @default(0)
+  mondayResponses Int @default(0)
+
+  // Tuesday
+  tuesdayCalls     Int @default(0)
+  tuesdayEmails    Int @default(0)
+  tuesdayContacts  Int @default(0)
+  tuesdayResponses Int @default(0)
+
+  // Wednesday
+  wednesdayCalls     Int @default(0)
+  wednesdayEmails    Int @default(0)
+  wednesdayContacts  Int @default(0)
+  wednesdayResponses Int @default(0)
+
+  // Thursday
+  thursdayCalls     Int @default(0)
+  thursdayEmails    Int @default(0)
+  thursdayContacts  Int @default(0)
+  thursdayResponses Int @default(0)
+
+  // Friday
+  fridayCalls     Int @default(0)
+  fridayEmails    Int @default(0)
+  fridayContacts  Int @default(0)
+  fridayResponses Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, weekStartDate])
+  @@map("weekly_activities")
+}
+
