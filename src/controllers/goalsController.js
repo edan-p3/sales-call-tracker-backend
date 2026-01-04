@@ -57,6 +57,7 @@ const getGoals = async (req, res, next) => {
 /**
  * Update user's goals
  * PUT /api/goals
+ * Managers save organization-wide goals, reps cannot save goals
  */
 const updateGoals = async (req, res, next) => {
   try {
@@ -71,6 +72,16 @@ const updateGoals = async (req, res, next) => {
       responsesPerWeek,
     } = req.body;
 
+    // Only managers can update goals
+    if (req.user.role !== 'manager' && req.user.role !== 'admin') {
+      return errorResponse(
+        res,
+        'UNAUTHORIZED',
+        'Only managers can update goals',
+        403
+      );
+    }
+
     // Validate all metrics are non-negative
     if (!areValidMetrics(req.body)) {
       return errorResponse(
@@ -81,16 +92,27 @@ const updateGoals = async (req, res, next) => {
       );
     }
 
-    // Find existing goals
+    // Managers save organization-wide goals (not personal goals)
+    if (!req.user.organizationId) {
+      return errorResponse(
+        res,
+        'NO_ORGANIZATION',
+        'Manager must belong to an organization to set goals',
+        400
+      );
+    }
+
+    // Find existing organization-wide goals
     let goals = await prisma.goals.findFirst({
       where: {
-        userId: req.user.id,
+        organizationId: req.user.organizationId,
+        userId: null, // Organization-wide, not user-specific
         isActive: true,
       },
     });
 
     if (goals) {
-      // Update existing goals
+      // Update existing organization goals
       goals = await prisma.goals.update({
         where: { id: goals.id },
         data: {
@@ -105,10 +127,11 @@ const updateGoals = async (req, res, next) => {
         },
       });
     } else {
-      // Create new goals
+      // Create new organization-wide goals
       goals = await prisma.goals.create({
         data: {
-          userId: req.user.id,
+          organizationId: req.user.organizationId,
+          userId: null, // Organization-wide
           callsPerDay,
           emailsPerDay,
           contactsPerDay,
@@ -132,7 +155,7 @@ const updateGoals = async (req, res, next) => {
       responsesPerWeek: goals.responsesPerWeek,
     };
 
-    return successResponse(res, goalsData, 'Goals updated successfully');
+    return successResponse(res, goalsData, 'Organization goals updated successfully. All team members will see these goals.');
   } catch (error) {
     next(error);
   }
