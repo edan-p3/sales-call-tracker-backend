@@ -5,35 +5,93 @@ const { areValidMetrics } = require('../utils/validators');
 /**
  * Get user's goals
  * GET /api/goals
+ * Reps get organization-wide goals set by their manager
+ * Managers/Admins can have personal goals or set organization goals
  */
 const getGoals = async (req, res, next) => {
   try {
-    // Try to find user-specific goals first
-    let goals = await prisma.goals.findFirst({
-      where: {
-        userId: req.user.id,
-        isActive: true,
-      },
-    });
+    let goals = null;
 
-    // If no user-specific goals, try organization-wide goals
-    if (!goals && req.user.organizationId) {
-      goals = await prisma.goals.findFirst({
-        where: {
-          organizationId: req.user.organizationId,
-          userId: null,
-          isActive: true,
-        },
-      });
-    }
+    // For regular sales reps: ONLY use organization-wide goals
+    if (req.user.role === 'sales_rep') {
+      if (req.user.organizationId) {
+        goals = await prisma.goals.findFirst({
+          where: {
+            organizationId: req.user.organizationId,
+            userId: null, // Organization-wide goals
+            isActive: true,
+          },
+        });
+      }
 
-    // If still no goals, create default goals for user
-    if (!goals) {
-      goals = await prisma.goals.create({
-        data: {
-          userId: req.user.id,
-        },
-      });
+      // If no organization goals exist, create default organization goals
+      if (!goals && req.user.organizationId) {
+        goals = await prisma.goals.create({
+          data: {
+            organizationId: req.user.organizationId,
+            userId: null, // Organization-wide, not user-specific
+          },
+        });
+      }
+
+      // If still no goals (no organization), return defaults
+      if (!goals) {
+        const defaultGoalsData = {
+          callsPerDay: 25,
+          emailsPerDay: 30,
+          contactsPerDay: 10,
+          responsesPerDay: 5,
+          meetingsPerDay: 2,
+          callsPerWeek: 125,
+          emailsPerWeek: 150,
+          contactsPerWeek: 50,
+          responsesPerWeek: 25,
+          meetingsPerWeek: 10,
+        };
+        return successResponse(res, defaultGoalsData);
+      }
+    } 
+    // For managers/admins: Check organization goals first, then personal goals
+    else {
+      // First, try to find organization-wide goals
+      if (req.user.organizationId) {
+        goals = await prisma.goals.findFirst({
+          where: {
+            organizationId: req.user.organizationId,
+            userId: null,
+            isActive: true,
+          },
+        });
+      }
+
+      // If no organization goals, try personal goals
+      if (!goals) {
+        goals = await prisma.goals.findFirst({
+          where: {
+            userId: req.user.id,
+            isActive: true,
+          },
+        });
+      }
+
+      // If still no goals, create organization-wide goals for the manager
+      if (!goals && req.user.organizationId) {
+        goals = await prisma.goals.create({
+          data: {
+            organizationId: req.user.organizationId,
+            userId: null, // Organization-wide
+          },
+        });
+      }
+
+      // Last resort: create personal goals
+      if (!goals) {
+        goals = await prisma.goals.create({
+          data: {
+            userId: req.user.id,
+          },
+        });
+      }
     }
 
     // Return only the goals data, not metadata
@@ -42,10 +100,12 @@ const getGoals = async (req, res, next) => {
       emailsPerDay: goals.emailsPerDay,
       contactsPerDay: goals.contactsPerDay,
       responsesPerDay: goals.responsesPerDay,
+      meetingsPerDay: 2, // Default for meetings (not in DB yet)
       callsPerWeek: goals.callsPerWeek,
       emailsPerWeek: goals.emailsPerWeek,
       contactsPerWeek: goals.contactsPerWeek,
       responsesPerWeek: goals.responsesPerWeek,
+      meetingsPerWeek: 10, // Default for meetings (not in DB yet)
     };
 
     return successResponse(res, goalsData);
