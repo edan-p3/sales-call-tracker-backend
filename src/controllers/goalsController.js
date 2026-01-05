@@ -100,12 +100,12 @@ const getGoals = async (req, res, next) => {
       emailsPerDay: goals.emailsPerDay,
       contactsPerDay: goals.contactsPerDay,
       responsesPerDay: goals.responsesPerDay,
-      meetingsPerDay: 2, // Default for meetings (not in DB yet)
+      meetingsPerDay: goals.meetingsPerDay || 0,
       callsPerWeek: goals.callsPerWeek,
       emailsPerWeek: goals.emailsPerWeek,
       contactsPerWeek: goals.contactsPerWeek,
       responsesPerWeek: goals.responsesPerWeek,
-      meetingsPerWeek: 10, // Default for meetings (not in DB yet)
+      meetingsPerWeek: goals.meetingsPerWeek || 0,
     };
 
     return successResponse(res, goalsData);
@@ -126,10 +126,12 @@ const updateGoals = async (req, res, next) => {
       emailsPerDay,
       contactsPerDay,
       responsesPerDay,
+      meetingsPerDay,
       callsPerWeek,
       emailsPerWeek,
       contactsPerWeek,
       responsesPerWeek,
+      meetingsPerWeek,
     } = req.body;
 
     // Only managers can update goals
@@ -180,10 +182,12 @@ const updateGoals = async (req, res, next) => {
           emailsPerDay,
           contactsPerDay,
           responsesPerDay,
+          meetingsPerDay: meetingsPerDay || 0,
           callsPerWeek,
           emailsPerWeek,
           contactsPerWeek,
           responsesPerWeek,
+          meetingsPerWeek: meetingsPerWeek || 0,
         },
       });
     } else {
@@ -196,10 +200,12 @@ const updateGoals = async (req, res, next) => {
           emailsPerDay,
           contactsPerDay,
           responsesPerDay,
+          meetingsPerDay: meetingsPerDay || 0,
           callsPerWeek,
           emailsPerWeek,
           contactsPerWeek,
           responsesPerWeek,
+          meetingsPerWeek: meetingsPerWeek || 0,
         },
       });
     }
@@ -209,10 +215,12 @@ const updateGoals = async (req, res, next) => {
       emailsPerDay: goals.emailsPerDay,
       contactsPerDay: goals.contactsPerDay,
       responsesPerDay: goals.responsesPerDay,
+      meetingsPerDay: goals.meetingsPerDay || 0,
       callsPerWeek: goals.callsPerWeek,
       emailsPerWeek: goals.emailsPerWeek,
       contactsPerWeek: goals.contactsPerWeek,
       responsesPerWeek: goals.responsesPerWeek,
+      meetingsPerWeek: goals.meetingsPerWeek || 0,
     };
 
     return successResponse(res, goalsData, 'Organization goals updated successfully. All team members will see these goals.');
