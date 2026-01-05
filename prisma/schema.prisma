@@ -49,10 +49,12 @@ model Goals {
   emailsPerDay     Int       @default(30)
   contactsPerDay   Int       @default(10)
   responsesPerDay  Int       @default(5)
+  meetingsPerDay   Int       @default(0)
   callsPerWeek     Int       @default(125)
   emailsPerWeek    Int       @default(150)
   contactsPerWeek  Int       @default(50)
   responsesPerWeek Int       @default(25)
+  meetingsPerWeek  Int       @default(0)
   isActive         Boolean   @default(true)
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
